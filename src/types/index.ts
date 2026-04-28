@@ -81,21 +81,14 @@ export interface Payout {
   paidAt: Date;
 }
 
-// ─── Dispute ──────────────────────────────────────────────────────────────────
-export type DisputeStatus = "open" | "resolved" | "rejected";
-
-export interface Dispute {
+// ─── Circle Chat ──────────────────────────────────────────────────────────────
+export interface CircleMessage {
   id: string;
-  contributionId: string;
-  memberId: string;
   circleId: string;
-  paystackReference?: string;
-  reason: string;
-  status: DisputeStatus;
-  resolutionNotes?: string;
-  resolvedBy?: string;
-  createdAt: Date;
-  resolvedAt?: Date;
+  userId: string;
+  displayName: string;  // joined from users table at read time
+  content: string;
+  createdAt: string;    // ISO 8601 string
 }
 
 // ─── API ──────────────────────────────────────────────────────────────────────
