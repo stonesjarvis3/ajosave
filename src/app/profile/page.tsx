@@ -11,6 +11,8 @@ export default function ProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
+  const { connectionState, publicKey, error: walletError, connect, disconnect } = useFreighterWallet();
+
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [form, setForm] = useState({ displayName: "", email: "", stellarPublicKey: "" });
   const [saving, setSaving] = useState(false);
@@ -257,6 +259,27 @@ export default function ProfilePage() {
                 placeholder="GXXXXXXX…"
                 spellCheck={false}
               />
+              {connectionState !== "not_installed" && (
+                <ConnectWalletButton
+                  connectionState={connectionState}
+                  onConnect={connect}
+                  onDisconnect={disconnect}
+                  publicKey={publicKey}
+                />
+              )}
+              {connectionState === "not_installed" && (
+                <small className="input-hint">
+                  Don&apos;t have a Stellar wallet?{" "}
+                  <a href="https://freighter.app" target="_blank" rel="noopener noreferrer">
+                    Install Freighter
+                  </a>
+                </small>
+              )}
+              {walletError && (
+                <p role="alert" style={{ color: "var(--color-error)", fontSize: "0.875rem", marginTop: "0.25rem" }}>
+                  {walletError}
+                </p>
+              )}
             </div>
 
             {message && (
