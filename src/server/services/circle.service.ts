@@ -86,6 +86,7 @@ export interface CircleFilters {
   maxAmount?: number;
   currency?: string;
   search?: string;
+  status?: CircleStatus;
 }
 
 export async function listOpenCircles(
@@ -97,10 +98,12 @@ export async function listOpenCircles(
   const safeLimit = Math.min(100, Math.max(1, limit));
   const offset = (safePage - 1) * safeLimit;
 
-  let queryText = `SELECT ${CIRCLE_SELECT} FROM circles WHERE status = 'open' AND deleted_at IS NULL`;
-  let countQueryText = "SELECT COUNT(*) FROM circles WHERE status = 'open' AND deleted_at IS NULL";
-  const queryParams: any[] = [];
-  let paramIndex = 1;
+  const statusFilter: CircleStatus = filters.status ?? 'open';
+  const queryParams: any[] = [statusFilter];
+  let paramIndex = 2;
+
+  let queryText = `SELECT ${CIRCLE_SELECT} FROM circles WHERE status = $1 AND deleted_at IS NULL`;
+  let countQueryText = "SELECT COUNT(*) FROM circles WHERE status = $1 AND deleted_at IS NULL";
 
   if (filters.frequency) {
     queryText += ` AND cycle_frequency = $${paramIndex}`;
