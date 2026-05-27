@@ -15,6 +15,7 @@ export function CircleFilters() {
   const [minAmount, setMinAmount] = useState(searchParams.get("minAmount") || "");
   const [maxAmount, setMaxAmount] = useState(searchParams.get("maxAmount") || "");
   const [currency, setCurrency] = useState(searchParams.get("currency") || "");
+  const [status, setStatus] = useState(searchParams.get("status") || "");
 
   const updateFilters = useCallback(
     (newFilters: Record<string, string>) => {
@@ -70,6 +71,24 @@ export function CircleFilters() {
           <option value="weekly">Weekly</option>
           <option value="biweekly">Bi-weekly</option>
           <option value="monthly">Monthly</option>
+        </select>
+      </div>
+
+      <div className={styles.filterGroup}>
+        <label className={styles.label}>Status</label>
+        <select
+          className={styles.select}
+          value={status}
+          onChange={(e) => {
+            setStatus(e.target.value);
+            updateFilters({ status: e.target.value });
+          }}
+        >
+          <option value="">All Statuses</option>
+          <option value="open">Open</option>
+          <option value="active">Active</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
         </select>
       </div>
 

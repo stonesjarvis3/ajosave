@@ -14,6 +14,8 @@ interface Props {
     minAmount?: string;
     maxAmount?: string;
     search?: string;
+    status?: string;
+    currency?: string;
   };
 }
 
@@ -24,13 +26,17 @@ export default async function CirclesPage({ searchParams }: Props) {
     minAmount: searchParams.minAmount ? parseInt(searchParams.minAmount, 10) : undefined,
     maxAmount: searchParams.maxAmount ? parseInt(searchParams.maxAmount, 10) : undefined,
     search: searchParams.search,
+    status: searchParams.status as any,
+    currency: searchParams.currency,
   });
 
   return (
     <div className={styles.page}>
       <div className="container">
         <div className={styles.header}>
-          <h1 className={styles.title}>Open Circles</h1>
+          <h1 className={styles.title}>
+            {searchParams.status ? `${searchParams.status.charAt(0).toUpperCase() + searchParams.status.slice(1)} Circles` : 'Open Circles'}
+          </h1>
           <Link href="/circles/create" className="btn btn--accent">+ New Circle</Link>
         </div>
 
