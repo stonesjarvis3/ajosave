@@ -67,6 +67,15 @@ export interface Payout {
   paidAt: Date;
 }
 
+// ─── Referral ─────────────────────────────────────────────────────────────────
+export interface Referral {
+  id: string;
+  referrerId: string;         // user who owns the referral code
+  referredUserId: string;     // new user who joined via the link
+  code: string;
+  createdAt: Date;
+}
+
 // ─── API ──────────────────────────────────────────────────────────────────────
 export interface ApiSuccess<T> {
   success: true;
