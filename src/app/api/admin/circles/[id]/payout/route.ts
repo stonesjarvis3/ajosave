@@ -52,7 +52,7 @@ export const POST = withErrorHandler(
       // Log the audit action
       if (actorId) {
         const requestContext = getRequestContext(req);
-        await logAuditAction("TRIGGER_PAYOUT", "PAYOUT", params.id, {
+        await logAuditAction(actorId, "TRIGGER_PAYOUT", "PAYOUT", params.id, {
           details: {
             circleName: circle.name,
             recipientMemberId: recipient.id,

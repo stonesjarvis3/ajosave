@@ -1,6 +1,16 @@
 import { MigrationBuilder } from "node-pg-migrate";
 
 export async function up(pgm: MigrationBuilder): Promise<void> {
+  // Create function to prevent modifications (must be created before trigger)
+  pgm.sql(`
+    CREATE OR REPLACE FUNCTION raise_immutable_error()
+    RETURNS TRIGGER AS $$
+    BEGIN
+      RAISE EXCEPTION 'Audit logs are immutable and cannot be modified or deleted';
+    END;
+    $$ LANGUAGE plpgsql;
+  `);
+
   // Create audit_logs table for immutable audit trail
   pgm.createTable("audit_logs", {
     id: { type: "uuid", primaryKey: true, default: pgm.func("gen_random_uuid()") },
@@ -56,16 +66,6 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     BEFORE UPDATE OR DELETE ON audit_logs
     FOR EACH ROW
     EXECUTE FUNCTION raise_immutable_error();
-  `);
-
-  // Create function to prevent modifications
-  pgm.sql(`
-    CREATE OR REPLACE FUNCTION raise_immutable_error()
-    RETURNS TRIGGER AS $$
-    BEGIN
-      RAISE EXCEPTION 'Audit logs are immutable and cannot be modified or deleted';
-    END;
-    $$ LANGUAGE plpgsql;
   `);
 }
 
