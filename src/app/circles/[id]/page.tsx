@@ -121,7 +121,7 @@ export default async function CircleDetailPage({ params }: Props) {
             </dl>
           </div>
 
-          <MemberPayoutList circle={circle} initialMembers={members} isCreator={isCreator} />
+          <MemberPayoutList circle={circle} initialMembers={members} isCreator={isCreator} currentUserId={userId} />
         </div>
 
         {userId && (
