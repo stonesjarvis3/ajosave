@@ -37,6 +37,30 @@ export function hasUsdcTrustline(account: StellarAccountWithBalances): boolean {
   );
 }
 
+export async function getCurrentBaseFee(): Promise<number> {
+  try {
+    const fees = await server.feeStats();
+    const candidate = Number(
+      fees.fee_charged?.mode ?? fees.fee_charged?.min ?? fees.fee_charged?.p50 ?? BASE_FEE
+    );
+    if (Number.isFinite(candidate) && candidate > 0) {
+      return candidate;
+    }
+  } catch (err) {
+    logger.warn({ err }, "[stellar] failed to fetch current base fee from Horizon; using default");
+  }
+  return Number(BASE_FEE);
+}
+
+export function calculatePriorityFee(baseFee: number): number {
+  const cap = Number.isFinite(serverConfig.stellar.maxFeeCap)
+    ? serverConfig.stellar.maxFeeCap
+    : Number.MAX_SAFE_INTEGER;
+  const desired = baseFee * 2;
+  const fee = Math.min(desired, cap);
+  return fee < baseFee ? baseFee : fee;
+}
+
 /** Error codes that are safe to retry (transient). */
 function isRetryable(err: any): boolean {
   // 1. Check Horizon response status codes
@@ -88,8 +112,10 @@ export async function sendUsdcPayment(destination: string, amount: string): Prom
     try {
       // Fetch fresh account (and sequence number) on every attempt to prevent stale sequences
       const account = await server.loadAccount(keypair.publicKey());
+      const baseFee = await getCurrentBaseFee();
+      const fee = calculatePriorityFee(baseFee);
 
-      const tx = new TransactionBuilder(account, { fee: BASE_FEE, networkPassphrase })
+      const tx = new TransactionBuilder(account, { fee, networkPassphrase })
         .addOperation(Operation.payment({ destination, asset: USDC, amount }))
         .setTimeout(30)
         .build();
@@ -98,7 +124,9 @@ export async function sendUsdcPayment(destination: string, amount: string): Prom
       const result = await server.submitTransaction(tx);
       
       if (attempt > 1) {
-        logger.info({ attempt, destination, hash: result.hash }, "[stellar] sendUsdcPayment succeeded after retry");
+        logger.info({ attempt, destination, hash: result.hash, baseFee, fee }, "[stellar] sendUsdcPayment succeeded after retry");
+      } else {
+        logger.info({ destination, hash: result.hash, baseFee, fee }, "[stellar] sendUsdcPayment succeeded");
       }
       
       return result.hash;
