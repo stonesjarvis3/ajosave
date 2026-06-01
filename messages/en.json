@@ -1,0 +1,48 @@
+{
+  "nav": {
+    "browseCircles": "Browse Circles",
+    "dashboard": "Dashboard",
+    "analytics": "Analytics",
+    "admin": "Admin",
+    "profile": "Profile",
+    "signIn": "Sign In"
+  },
+  "home": {
+    "hero": "Trustless Rotating Savings on Stellar",
+    "subtitle": "Join or create savings circles (Ajo/Esusu) powered by smart contracts. Contribute in Naira, receive in USDC.",
+    "getStarted": "Get Started",
+    "browseCircles": "Browse Circles"
+  },
+  "circles": {
+    "title": "Browse Circles",
+    "create": "Create Circle",
+    "join": "Join",
+    "members": "members",
+    "perCycle": "per cycle",
+    "open": "Open",
+    "full": "Full",
+    "active": "Active",
+    "completed": "Completed"
+  },
+  "dashboard": {
+    "title": "My Dashboard",
+    "myCircles": "My Circles",
+    "noCircles": "You haven't joined any circles yet."
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signOut": "Sign Out",
+    "phone": "Phone Number",
+    "sendOtp": "Send OTP",
+    "verifyOtp": "Verify OTP",
+    "enterOtp": "Enter OTP"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong.",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "back": "Back"
+  }
+}
