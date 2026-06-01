@@ -48,8 +48,10 @@
     "@stellar/stellar-sdk": "^12.3.0",
     "@tanstack/react-query": "^5.40.0",
     "axios": "^1.7.2",
+    "bullmq": "^5.7.8",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
+    "ioredis": "^5.3.2",
     "jose": "^5.6.3",
     "next": "14.2.4",
     "next-auth": "^4.24.7",
@@ -82,8 +84,6 @@
     "prettier": "^3.3.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.3"
-    "bullmq": "^1.81.0",
-    "ioredis": "^5.3.2"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
