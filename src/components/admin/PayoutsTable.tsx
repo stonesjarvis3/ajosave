@@ -3,7 +3,7 @@
 import type { AdminPayoutRow } from "@/server/services/admin.service";
 import { format } from "date-fns";
 import { CopyableText } from "@/components/ui/CopyableText";
-import styles from "../admin.module.css";
+import styles from "./admin.module.css";
 
 interface PayoutsTableProps {
   payouts: AdminPayoutRow[];

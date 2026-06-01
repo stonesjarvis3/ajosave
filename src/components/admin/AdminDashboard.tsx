@@ -1,14 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, lazy, Suspense } from "react";
 import type { AdminCircleRow } from "@/server/services/admin.service";
 import type { AdminPayoutRow } from "@/server/services/admin.service";
-import { CirclesTable } from "./CirclesTable";
-import { PayoutsTable } from "./PayoutsTable";
-import { AnalyticsDashboard } from "./AnalyticsDashboard";
 import { ConnectionStatus } from "@/components/ui/ConnectionStatus";
 import { usePolling } from "@/hooks/usePolling";
-import styles from "../admin.module.css";
+import styles from "./admin.module.css";
+
+const CirclesTable = lazy(() => import("./CirclesTable").then((mod) => ({ default: mod.CirclesTable })));
+const PayoutsTable = lazy(() => import("./PayoutsTable").then((mod) => ({ default: mod.PayoutsTable })));
+const AnalyticsDashboard = lazy(() => import("./AnalyticsDashboard").then((mod) => ({ default: mod.AnalyticsDashboard })));
 
 type Tab = "circles" | "payouts" | "analytics";
 
@@ -145,16 +146,22 @@ export function AdminDashboard() {
       {error && <div className={styles.error} role="alert">{error}</div>}
 
       {tab === "analytics" ? (
-        <AnalyticsDashboard />
+        <Suspense fallback={<div className={styles.loading}>Loading analytics dashboard…</div>}>
+          <AnalyticsDashboard />
+        </Suspense>
       ) : loading ? (
         <div className={styles.loading}>Loading…</div>
       ) : tab === "circles" ? (
         <div id="tab-panel-circles" role="tabpanel" aria-labelledby="tab-circles">
-          <CirclesTable circles={circles} />
+          <Suspense fallback={<div className={styles.loading}>Loading circles table…</div>}>
+            <CirclesTable circles={circles} />
+          </Suspense>
         </div>
       ) : (
         <div id="tab-panel-payouts" role="tabpanel" aria-labelledby="tab-payouts">
-          <PayoutsTable payouts={payouts} />
+          <Suspense fallback={<div className={styles.loading}>Loading payouts table…</div>}>
+            <PayoutsTable payouts={payouts} />
+          </Suspense>
         </div>
       )}
     </>
