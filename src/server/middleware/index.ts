@@ -153,40 +153,33 @@ export function withRateLimit(
   };
 }
 
-/**
- * Middleware wrapper that sanitizes the JSON request body before passing it
- * to the handler. The sanitized body is attached as `req.sanitizedBody` via
- * a patched clone so downstream handlers can call `req.json()` normally, or
- * read `(req as SanitizedRequest).sanitizedBody` directly.
- *
- * Usage: wrap your handler with withSanitizedBody, then read the body via
- * `await req.json()` — the middleware replaces the body stream with the
- * sanitized payload.
- */
-export type SanitizedRequest = NextRequest & { sanitizedBody: unknown };
+const IDEMPOTENCY_TTL_SECONDS = 24 * 60 * 60; // 24 hours
 
-export function withSanitizedBody(handler: Handler): Handler {
+/**
+ * Idempotency middleware for payment endpoints.
+ * Reads X-Idempotency-Key header, returns cached response for duplicate keys.
+ * Caches the response body + status in Redis for 24h.
+ */
+export function withIdempotency(handler: Handler): Handler {
   return async (req, ctx) => {
-    let body: unknown;
-    try {
-      body = await req.json();
-    } catch {
-      return NextResponse.json<ApiError>(
-        { success: false, error: "Invalid JSON body", code: "BAD_REQUEST" },
-        { status: 400 }
-      );
+    const key = req.headers.get("x-idempotency-key");
+    if (!key) return handler(req, ctx);
+
+    const redis = await getRedis();
+    const redisKey = `idempotency:${key}`;
+
+    const cached = await redis.get(redisKey);
+    if (cached) {
+      const { status, body } = JSON.parse(cached);
+      return NextResponse.json(body, { status });
     }
 
-    const clean = sanitizeBody(body);
-
-    // Re-create the request with the sanitized body so req.json() works downstream
-    const sanitized = new NextRequest(req.url, {
-      method: req.method,
-      headers: req.headers,
-      body: JSON.stringify(clean),
+    const response = await handler(req, ctx);
+    const body = await response.clone().json();
+    await redis.set(redisKey, JSON.stringify({ status: response.status, body }), {
+      EX: IDEMPOTENCY_TTL_SECONDS,
     });
-    (sanitized as SanitizedRequest).sanitizedBody = clean;
 
-    return handler(sanitized, ctx);
+    return response;
   };
 }
