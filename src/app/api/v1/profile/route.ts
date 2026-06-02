@@ -92,9 +92,9 @@ export async function GET(): Promise<NextResponse<ApiResponse<ProfileData>>> {
   });
 }
 
-export async function PATCH(
+export const PATCH = withSanitizedBody(async (
   req: NextRequest
-): Promise<NextResponse<ApiResponse<{ updated: true }>>> {
+): Promise<NextResponse<ApiResponse<{ updated: true }>>> => {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
@@ -130,4 +130,4 @@ export async function PATCH(
   );
 
   return NextResponse.json({ success: true, data: { updated: true } });
-}
+});

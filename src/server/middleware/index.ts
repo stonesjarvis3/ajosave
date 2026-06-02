@@ -7,6 +7,7 @@ import { getRedis } from "@/lib/redis";
 import { randomUUID } from "crypto";
 import logger from "@/lib/logger";
 import { runWithCorrelationId } from "@/lib/correlation";
+import { sanitizeBody } from "@/lib/sanitize";
 
 type Handler = (_req: NextRequest, _ctx?: unknown) => Promise<NextResponse>;
 
