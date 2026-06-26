@@ -98,7 +98,7 @@ impl AjoContract {
     ) {
         Self::extend_instance_ttl(&env);
         if env.storage().instance().has(&DataKey::Admin) {
-            panic!("already initialized");
+            panic!("AlreadyInitialized");
         }
         if max_members < 2 || max_members > 20 {
             panic!("max_members must be between 2 and 20");
