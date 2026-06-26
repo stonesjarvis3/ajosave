@@ -28,6 +28,7 @@ pub enum DataKey {
     CurrentCycle,
     NextPayoutTime,
     Contributions(Address, u32), // (member, cycle) → bool
+    Defaulted(Address),          // member → bool (missed contribution, skipped payout)
     Completed,
 }
 
@@ -180,28 +181,44 @@ impl AjoContract {
 
         let members: Vec<Address> = env.storage().instance().get(&DataKey::Members).expect("not initialized");
         let max_members: u32 = env.storage().instance().get(&DataKey::MaxMembers).expect("not initialized");
+        let token: Address = env.storage().instance().get(&DataKey::Token).expect("not initialized");
+        let contribution: i128 = env.storage().instance().get(&DataKey::ContributionAmount).expect("not initialized");
+        let interval: u64 = env.storage().instance().get(&DataKey::CycleIntervalSecs).expect("not initialized");
 
         // Recipient is the member at position (current_cycle - 1)
         let recipient = members.get(current_cycle - 1).expect("invalid cycle");
 
-        let token: Address = env.storage().instance().get(&DataKey::Token).expect("not initialized");
-        let contribution: i128 = env.storage().instance().get(&DataKey::ContributionAmount).expect("not initialized");
-        let pot = contribution * (max_members as i128);
+        // Penalty enforcement: skip recipient if they haven't contributed this cycle
+        let has_contributed: bool = env
+            .storage()
+            .instance()
+            .get(&DataKey::Contributions(recipient.clone(), current_cycle))
+            .unwrap_or(false);
 
-        let token_client = token::Client::new(&env, &token);
-        token_client.transfer(&env.current_contract_address(), &recipient, &pot);
-
-        env.events().publish((Symbol::new(&env, "payout"),), (recipient.clone(), pot, current_cycle));
+        if !has_contributed {
+            // Mark member as defaulted — skipped from receiving payout
+            env.storage().instance().set(&DataKey::Defaulted(recipient.clone()), &true);
+            env.events().publish((Symbol::new(&env, "defaulted"),), (recipient.clone(), current_cycle));
+        } else {
+            let pot = contribution * (max_members as i128);
+            let token_client = token::Client::new(&env, &token);
+            token_client.transfer(&env.current_contract_address(), &recipient, &pot);
+            env.events().publish((Symbol::new(&env, "payout"),), (recipient.clone(), pot, current_cycle));
+        }
 
         // Advance or complete
         if current_cycle >= max_members {
             env.storage().instance().set(&DataKey::Completed, &true);
             env.events().publish((Symbol::new(&env, "completed"),), ());
         } else {
-            let interval: u64 = env.storage().instance().get(&DataKey::CycleIntervalSecs).expect("not initialized");
             env.storage().instance().set(&DataKey::CurrentCycle, &(current_cycle + 1));
             env.storage().instance().set(&DataKey::NextPayoutTime, &(env.ledger().timestamp() + interval));
         }
+    }
+
+    /// Read-only: check if a member has defaulted.
+    pub fn is_defaulted(env: Env, member: Address) -> bool {
+        env.storage().instance().get(&DataKey::Defaulted(member)).unwrap_or(false)
     }
 
     /// Read-only: get circle state.
@@ -298,6 +315,40 @@ mod tests {
 
         let (_, _, _, completed) = client.get_state();
         assert!(completed);
+    }
+
+    #[test]
+    fn test_payout_skips_defaulted_member() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let (_, members, _token_id, token, client) = setup(&env);
+
+        // All 3 members join (cycle 1 contributions recorded via join)
+        for m in members.iter() {
+            client.join(m);
+        }
+
+        // Member 0 is the cycle-1 recipient — they already contributed via join, so payout succeeds
+        env.ledger().with_mut(|l| l.timestamp = 86401);
+        let balance_before = token.balance(&members.get(0).unwrap());
+        client.payout();
+        // Recipient got the pot
+        assert!(token.balance(&members.get(0).unwrap()) > balance_before);
+        assert!(!client.is_defaulted(&members.get(0).unwrap()));
+
+        // Cycle 2: member 1 is the recipient but does NOT contribute
+        // Other members contribute but member 1 skips
+        client.contribute(&members.get(0).unwrap());
+        client.contribute(&members.get(2).unwrap());
+        // member 1 (index 1) skips contributing
+
+        env.ledger().with_mut(|l| l.timestamp = 172802);
+        let balance_before_m1 = token.balance(&members.get(1).unwrap());
+        client.payout(); // should skip member 1
+        // Member 1 received nothing
+        assert_eq!(token.balance(&members.get(1).unwrap()), balance_before_m1);
+        assert!(client.is_defaulted(&members.get(1).unwrap()));
     }
 
     #[test]
